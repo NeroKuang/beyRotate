@@ -89,6 +89,73 @@ export async function signUp(formData: FormData) {
   redirect("/login?message=registered");
 }
 
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email) redirect("/forgot-password?error=請輸入 Email");
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (user) {
+    const crypto = await import("crypto");
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
+
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `reset:${email}` },
+    });
+
+    await prisma.verificationToken.create({
+      data: { identifier: `reset:${email}`, token, expires },
+    });
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      process.env.AUTH_URL ??
+      "http://localhost:5001";
+    const resetUrl = `${baseUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+    console.log(`[password-reset] ${email} → ${resetUrl}`);
+  }
+
+  redirect("/forgot-password?sent=1");
+}
+
+export async function resetPassword(formData: FormData) {
+  const token = String(formData.get("token") ?? "");
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("password_confirm") ?? "");
+
+  const qs = `token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+
+  if (password.length < 8)
+    redirect(`/reset-password?${qs}&error=weak`);
+  if (password !== confirm)
+    redirect(`/reset-password?${qs}&error=兩次密碼不一致`);
+
+  const record = await prisma.verificationToken.findFirst({
+    where: { identifier: `reset:${email}`, token },
+  });
+
+  if (!record || record.expires < new Date()) {
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `reset:${email}`, token },
+    });
+    redirect(`/reset-password?${qs}&error=expired`);
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash },
+  });
+
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: `reset:${email}` },
+  });
+
+  redirect("/login?message=reset");
+}
+
 export async function completeOnboarding(formData: FormData) {
   const displayName = String(formData.get("display_name") ?? "").trim();
   const terms = formData.get("terms") === "on";

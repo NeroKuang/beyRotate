@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { loginWithCredentials } from "@/app/actions/auth";
 import { LoginSubmitButton } from "@/components/auth/login-submit-button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Input, Label } from "@/components/ui/input";
 
 export function LoginForm({ error, message }: { error?: string; message?: string }) {
@@ -7,6 +9,9 @@ export function LoginForm({ error, message }: { error?: string; message?: string
     <div className="space-y-4">
       {message === "registered" && (
         <p className="text-sm text-emerald-600">註冊成功，請登入。</p>
+      )}
+      {message === "reset" && (
+        <p className="text-sm text-emerald-600">密碼已重設，請用新密碼登入。</p>
       )}
       {message === "verify" && (
         <p className="text-sm text-amber-700">
@@ -25,13 +30,17 @@ export function LoginForm({ error, message }: { error?: string; message?: string
         </div>
         <div>
           <Label>密碼</Label>
-          <Input
+          <PasswordInput
             name="password"
-            type="password"
             className="bey-input"
             autoComplete="current-password"
             required
           />
+        </div>
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-xs text-sky-600 hover:underline dark:text-sky-400">
+            忘記密碼？
+          </Link>
         </div>
         <LoginSubmitButton />
       </form>

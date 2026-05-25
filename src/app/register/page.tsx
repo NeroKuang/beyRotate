@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Input, Label } from "@/components/ui/input";
 import { BeyAuthShell } from "@/components/layout/bey-auth-shell";
 
@@ -36,7 +37,7 @@ export default async function RegisterPage({
         </div>
         <div>
           <Label>密碼</Label>
-          <Input name="password" type="password" minLength={8} required className="bey-input" />
+          <PasswordInput name="password" minLength={8} required className="bey-input" />
         </div>
         <label className="flex items-start gap-2 text-sm">
           <input name="terms" type="checkbox" required className="mt-1" />
