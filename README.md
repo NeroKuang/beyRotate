@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BeyRotate
 
-## Getting Started
+台灣戰鬥陀螺 X 玩家 C2C 交易平台。
 
-First, run the development server:
+| 階段 | 做法 |
+|------|------|
+| **現在** | 本機 Docker（Postgres + MinIO）+ `npm run dev` |
+| **上線** | [Zeabur](https://zeabur.com) 用根目錄 **Dockerfile** 部署 |
+
+詳細 Zeabur 步驟 → [docs/DEPLOY-ZEABUR.md](./docs/DEPLOY-ZEABUR.md)
+
+## 本機開發
+
+**需求：** Node.js 20+、Docker
 
 ```bash
+npm run docker:up
+cp .env.example .env.local
+# 填 AUTH_SECRET（openssl rand -base64 32）、ADMIN_EMAILS
+
+npm install
+npm run db:setup
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| 網址 | 說明 |
+|------|------|
+| http://localhost:5001 | 網站 |
+| http://localhost:9001 | MinIO 主控台（帳密見 `docker-compose.yml`） |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+日常：`npm run docker:up` → `npm run dev`；關閉容器：`npm run docker:down`。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` 請設 `REDIS_URL=redis://localhost:6379`（搜尋／目錄 API 快取）。產品目錄 `/catalog` 依 **CODE 分組**（如 CX-11 下列各套組、刃體／核輪／軸心），搜尋框支援**下拉建議**。
 
-## Learn More
+## 本機測試 Docker 映像（與 Zeabur 相同）
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run docker:up
+# .env.local 已設定 DATABASE_URL 等
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+docker build -t beyrotate .
+docker run --rm -p 5001:8080 --env-file .env.local -e PORT=8080 beyrotate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 指令
 
-## Deploy on Vercel
+| 指令 | 說明 |
+|------|------|
+| `npm run docker:up` | 啟動 Postgres + MinIO + **Redis** |
+| `npm run sync:catalog` | 同步 go-shoot 並刷新搜尋快取 |
+| `npm run docker:down` | 停止容器 |
+| `npm run db:setup` | schema + seed + 同步產品目錄 |
+| `npm run dev` | 開發伺服器 |
+| `npm run build` | 正式建置 |
+| `npm run sync:catalog` | 僅同步 go-shoot 產品 |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 專案結構（精簡後）
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+prisma/          # schema、seed
+src/             # Next.js App Router
+scripts/         # sync-catalog、Docker 啟動腳本
+Dockerfile       # Zeabur 建置用
+docker-compose.yml   # 僅本機 DB + MinIO
+docs/DEPLOY-ZEABUR.md
+```
+
+規格見 [SPEC.md](./SPEC.md)。
+
+## 免責
+
+非 Takara Tomy / Hasbro 官方。平台不代收代付。

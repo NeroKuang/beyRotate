@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" role="img" aria-label="???????">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <radialGradient id="core" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="16" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="72" stroke="url(#ring)" stroke-width="3" opacity="0.35"/>
+  <circle cx="100" cy="100" r="58" stroke="url(#ring)" stroke-width="2" opacity="0.5"/>
+  <circle cx="100" cy="100" r="44" stroke="#38bdf8" stroke-width="2" opacity="0.6"/>
+  <path d="M100 38 L118 88 L168 100 L118 112 L100 162 L82 112 L32 100 L82 88 Z" fill="url(#ring)" opacity="0.85"/>
+  <circle cx="100" cy="100" r="18" fill="url(#core)"/>
+  <circle cx="100" cy="100" r="8" fill="#1e293b"/>
+  <path d="M48 148 Q100 168 152 148" stroke="#38bdf8" stroke-width="2" opacity="0.4" fill="none"/>
+</svg>
