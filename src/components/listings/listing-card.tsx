@@ -19,14 +19,16 @@ export function ListingCard({ listing }: { listing: ListingWithRelations }) {
   const imageUrl = resolveListingCoverUrl(listing);
 
   const offerItems = listing.listing_items?.filter((i) => i.role === "offer") ?? [];
-  const offerLabels = offerItems.map((i) => listingItemDisplayLabel(i)).filter(Boolean);
-  const title =
-    listing.custom_title ??
-    (offerLabels.length > 1
-      ? `${offerLabels[0]} 等 ${offerLabels.length} 項`
-      : offerLabels[0]) ??
-    "刊登";
+  const offerLabels = offerItems.map((i) => {
+    const base =
+      i.catalog_variants?.display_label ??
+      i.catalog_parts?.display_label ??
+      i.seek_text ??
+      null;
+    return base;
+  }).filter(Boolean) as string[];
 
+  const title = listing.custom_title ?? offerLabels[0] ?? "刊登";
   const totalQty = offerItems.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
   const priceLabel = listingPriceLabel(listing);
 
@@ -65,7 +67,28 @@ export function ListingCard({ listing }: { listing: ListingWithRelations }) {
           </span>
           <span>{listing.view_count} 瀏覽</span>
         </div>
-        <h3 className="font-medium line-clamp-2">{title}</h3>
+        <h3 className="font-medium line-clamp-1">{title}</h3>
+        {offerLabels.length > 1 && (
+          <ul className="space-y-0.5">
+            {offerLabels.slice(0, 3).map((lbl, idx) => {
+              const qty = offerItems[idx]?.quantity ?? 1;
+              return (
+                <li key={idx} className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <span className="shrink-0 text-zinc-400">•</span>
+                  <span className="truncate">{lbl}</span>
+                  {qty > 1 && (
+                    <span className="shrink-0 text-sky-600 dark:text-sky-400">×{qty}</span>
+                  )}
+                </li>
+              );
+            })}
+            {offerLabels.length > 3 && (
+              <li className="text-xs text-zinc-400">
+                ⋯ 還有 {offerLabels.length - 3} 項
+              </li>
+            )}
+          </ul>
+        )}
         <p className="font-semibold text-emerald-700 dark:text-emerald-400">
           {priceLabel}
           {listing.negotiable && listing.type === "sell" && (
