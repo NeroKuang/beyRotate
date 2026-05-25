@@ -107,6 +107,7 @@ export default async function ListingDetailPage({
       : offerLabels[0]) ??
     "刊登";
 
+  const totalQty = offerItems.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
   const galleryUrls = resolveListingGalleryUrls(listing);
   const usesGoShootDefaults =
     (listing.listing_images ?? []).length === 0 && galleryUrls.length > 0;
@@ -132,6 +133,17 @@ export default async function ListingDetailPage({
             {listing.negotiable && listing.type === "sell" && " · 可議價"}
           </p>
           <dl className="mt-4 space-y-2 text-sm">
+            <div>
+              <dt className="text-zinc-500">數量</dt>
+              <dd>
+                <span className="rounded bg-sky-100 px-2 py-0.5 font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                  {totalQty} 件
+                </span>
+                {offerItems.length > 1 && (
+                  <span className="ml-1 text-zinc-500">（{offerItems.length} 種品項）</span>
+                )}
+              </dd>
+            </div>
             <div>
               <dt className="text-zinc-500">賣家</dt>
               <dd className="flex items-center gap-2">

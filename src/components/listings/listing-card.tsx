@@ -18,11 +18,8 @@ const TYPE_LABEL: Record<string, string> = {
 export function ListingCard({ listing }: { listing: ListingWithRelations }) {
   const imageUrl = resolveListingCoverUrl(listing);
 
-  const offerLabels =
-    listing.listing_items
-      ?.filter((i) => i.role === "offer")
-      .map((i) => listingItemDisplayLabel(i))
-      .filter(Boolean) ?? [];
+  const offerItems = listing.listing_items?.filter((i) => i.role === "offer") ?? [];
+  const offerLabels = offerItems.map((i) => listingItemDisplayLabel(i)).filter(Boolean);
   const title =
     listing.custom_title ??
     (offerLabels.length > 1
@@ -30,6 +27,7 @@ export function ListingCard({ listing }: { listing: ListingWithRelations }) {
       : offerLabels[0]) ??
     "刊登";
 
+  const totalQty = offerItems.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
   const priceLabel = listingPriceLabel(listing);
 
   return (
@@ -57,7 +55,14 @@ export function ListingCard({ listing }: { listing: ListingWithRelations }) {
       </div>
       <div className="p-3 space-y-1">
         <div className="flex justify-between gap-2 text-xs text-zinc-500">
-          <span>{TYPE_LABEL[listing.type]}</span>
+          <span>
+            {TYPE_LABEL[listing.type]}
+            {totalQty > 0 && (
+              <span className="ml-1 rounded bg-sky-100 px-1 py-0.5 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                {totalQty} 件
+              </span>
+            )}
+          </span>
           <span>{listing.view_count} 瀏覽</span>
         </div>
         <h3 className="font-medium line-clamp-2">{title}</h3>
