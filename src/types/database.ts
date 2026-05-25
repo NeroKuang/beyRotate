@@ -62,6 +62,7 @@ export interface ListingItem {
   catalog_part_id?: string | null;
   source_product_code?: string | null;
   source_part_spec?: string | null;
+  quantity: number;
   price?: number | null;
   budget?: number | null;
   role: "offer" | "seek";

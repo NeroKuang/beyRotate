@@ -56,6 +56,7 @@ export function mapListing(l: any): ListingWithRelations {
     catalog_part_id: i.catalogPartId,
     source_product_code: i.sourceProductCode,
     source_part_spec: i.sourcePartSpec,
+    quantity: i.quantity ?? 1,
     price: i.price,
     budget: i.budget,
     role: i.role,

@@ -1,7 +1,21 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import type { Profile } from "@/types/database";
+
+export function redirectByAuthError(error: string): never {
+  switch (error) {
+    case "verify":
+      redirect("/login?error=verify");
+    case "onboarding":
+      redirect("/onboarding");
+    case "banned":
+      redirect("/login?error=banned");
+    default:
+      redirect("/login");
+  }
+}
 
 export async function getSessionUser() {
   const session = await getServerSession(authOptions);

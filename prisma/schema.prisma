@@ -260,9 +260,10 @@ model Listing {
   createdAt                     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                     DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user   Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items  ListingItem[]
-  images ListingImage[]
+  user    Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   ListingItem[]
+  images  ListingImage[]
+  ratings Rating[]
 
   @@index([status, publishedAt(sort: Desc)])
   @@map("listings")
@@ -276,6 +277,7 @@ model ListingItem {
   catalogPartId      String?          @map("catalog_part_id") @db.Uuid
   sourceProductCode  String?          @map("source_product_code")
   sourcePartSpec     String?          @map("source_part_spec")
+  quantity           Int              @default(1)
   price              Int?
   budget             Int?
   role               ItemRole
@@ -379,6 +381,22 @@ model Report {
 
   @@unique([reporterId, targetType, targetId])
   @@map("reports")
+}
+
+model Rating {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  raterId   String   @map("rater_id") @db.Uuid
+  rateeId   String   @map("ratee_id") @db.Uuid
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, raterId])
+  @@index([rateeId])
+  @@map("ratings")
 }
 
 model AdminAuditLog {

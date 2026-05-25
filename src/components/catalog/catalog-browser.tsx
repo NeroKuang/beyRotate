@@ -117,7 +117,7 @@ export function CatalogBrowser({ initialCategory, initialQ }: Props) {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm h-10"
+          className="bey-input h-10 w-auto"
           aria-label="產品大類"
         >
           <option value="bey">陀螺</option>

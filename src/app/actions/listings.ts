@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireVerifiedUser } from "@/lib/auth";
+import { requireVerifiedUser, redirectByAuthError } from "@/lib/auth";
 import { LISTING_QUOTA, MAX_NOTE_LENGTH, MAX_SEEK_TEXT, DELIVERY_TAGS, MAX_LISTING_IMAGES } from "@/lib/constants";
 import {
   listingSellPriceFromItems,
@@ -17,12 +17,14 @@ const DELIVERY_TAG_VALUES = new Set<string>(DELIVERY_TAGS.map((t) => t.value));
 
 export async function createListing(formData: FormData) {
   const auth = await requireVerifiedUser();
-  if (auth.error) redirect(`/${auth.error === "login" ? "login" : auth.error === "verify" ? "login?message=verify" : "onboarding"}`);
+  if (auth.error) redirectByAuthError(auth.error);
 
   const type = String(formData.get("type")) as "sell" | "want" | "trade";
   const offerKind = String(formData.get("offer_kind") ?? "variant") as
     | "variant"
     | "part";
+  const formParams = `type=${type}&offer_kind=${offerKind}`;
+  const listingNewErr = (code: string) => `/listings/new?error=${code}&${formParams}`;
   const variantId = String(formData.get("variant_id") ?? "");
   const variantIds = formData
     .getAll("variant_ids")
@@ -38,6 +40,8 @@ export async function createListing(formData: FormData) {
   const partSourceSpecs = formData.getAll("part_source_specs").map((v) => String(v));
   const partAmounts = parseItemAmounts(formData, "part_amounts");
   const variantAmounts = parseItemAmounts(formData, "variant_amounts");
+  const variantQuantities = formData.getAll("variant_quantities").map((v) => Math.max(1, parseInt(String(v), 10) || 1));
+  const partQuantities = formData.getAll("part_quantities").map((v) => Math.max(1, parseInt(String(v), 10) || 1));
   const seekVariantId = String(formData.get("seek_variant_id") ?? "");
   const seekText = String(formData.get("seek_text") ?? "").trim();
   const publish = formData.get("publish") === "on";
@@ -57,7 +61,7 @@ export async function createListing(formData: FormData) {
     const amounts =
       offerKind === "part" ? partAmounts : variantAmounts;
     if (!validateItemAmounts(amounts, offerKind === "part" ? partIds.length : offerVariantIds.length)) {
-      redirect("/listings/new?error=item_price");
+      redirect(listingNewErr("item_price"));
     }
     price = listingSellPriceFromItems(amounts);
   }
@@ -65,16 +69,16 @@ export async function createListing(formData: FormData) {
     const amounts =
       offerKind === "part" ? partAmounts : variantAmounts;
     if (!validateItemAmounts(amounts, offerKind === "part" ? partIds.length : offerVariantIds.length)) {
-      redirect("/listings/new?error=item_price");
+      redirect(listingNewErr("item_price"));
     }
     budget = listingWantBudgetFromItems(amounts);
   }
 
   if (type === "sell" && !hasPerItemPricing && !price) {
-    redirect("/listings/new?error=price");
+    redirect(listingNewErr("price"));
   }
   if (type === "want" && !hasPerItemPricing && !budget) {
-    redirect("/listings/new?error=budget");
+    redirect(listingNewErr("budget"));
   }
 
   const cashDiff = formData.get("cash_diff")
@@ -87,7 +91,7 @@ export async function createListing(formData: FormData) {
       status: { in: ["active", "reserved"] },
     },
   });
-  if (activeCount >= LISTING_QUOTA && publish) redirect("/listings/new?error=quota");
+  if (activeCount >= LISTING_QUOTA && publish) redirect(listingNewErr("quota"));
 
   const note = String(formData.get("note") ?? "").slice(0, MAX_NOTE_LENGTH);
 
@@ -95,16 +99,16 @@ export async function createListing(formData: FormData) {
     .getAll("delivery_tags")
     .map((v) => String(v))
     .filter((v) => DELIVERY_TAG_VALUES.has(v));
-  if (deliveryTags.length === 0) redirect("/listings/new?error=delivery");
+  if (deliveryTags.length === 0) redirect(listingNewErr("delivery"));
 
   if (offerKind === "part") {
-    if (!partIds.length) redirect("/listings/new?error=part");
+    if (!partIds.length) redirect(listingNewErr("part"));
   } else if (!offerVariantIds.length) {
-    redirect("/listings/new?error=variant");
+    redirect(listingNewErr("variant"));
   }
 
   if (type === "trade" && !seekVariantId && !seekText) {
-    redirect("/listings/new?error=seek");
+    redirect(listingNewErr("seek"));
   }
 
   const listing = await prisma.$transaction(async (tx) => {
@@ -146,6 +150,7 @@ export async function createListing(formData: FormData) {
           sourceProductCode:
             (partSourceCodes[i] ?? "").trim().slice(0, 32) || null,
           sourcePartSpec: (partSourceSpecs[i] ?? "").trim().slice(0, 64) || null,
+          quantity: partQuantities[i] ?? 1,
           price: type === "sell" ? partAmounts[i] : null,
           budget: type === "want" ? partAmounts[i] : null,
           role: "offer" as const,
@@ -157,6 +162,7 @@ export async function createListing(formData: FormData) {
           listingId: created.id,
           itemKind: "variant" as const,
           catalogVariantId,
+          quantity: variantQuantities[i] ?? 1,
           price: type === "sell" ? variantAmounts[i] : null,
           budget: type === "want" ? variantAmounts[i] : null,
           role: "offer" as const,
@@ -226,7 +232,7 @@ async function attachDefaultListingImages(listingId: string) {
 
 export async function updateListing(formData: FormData) {
   const auth = await requireVerifiedUser();
-  if (auth.error) redirect("/login");
+  if (auth.error) redirectByAuthError(auth.error);
 
   const id = String(formData.get("id") ?? "");
   const listing = await prisma.listing.findUnique({
@@ -291,7 +297,7 @@ export async function updateListing(formData: FormData) {
 
 export async function updateListingStatus(listingId: string, status: string) {
   const auth = await requireVerifiedUser();
-  if (auth.error) redirect("/login");
+  if (auth.error) redirectByAuthError(auth.error);
 
   await prisma.listing.updateMany({
     where: { id: listingId, userId: auth.user.id },

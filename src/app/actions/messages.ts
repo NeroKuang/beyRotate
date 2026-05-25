@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireVerifiedUser } from "@/lib/auth";
+import { requireVerifiedUser, redirectByAuthError } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { MAX_MESSAGE_LENGTH } from "@/lib/constants";
@@ -11,7 +11,7 @@ export async function startConversation(
   listingId?: string
 ) {
   const auth = await requireVerifiedUser();
-  if (auth.error) redirect("/login");
+  if (auth.error) redirectByAuthError(auth.error);
 
   if (otherUserId === auth.user.id) redirect("/messages");
 
@@ -51,7 +51,7 @@ export async function startConversation(
 
 export async function sendMessage(formData: FormData) {
   const auth = await requireVerifiedUser();
-  if (auth.error) redirect("/login");
+  if (auth.error) redirectByAuthError(auth.error);
 
   const conversationId = String(formData.get("conversation_id") ?? "");
   const body = String(formData.get("body") ?? "").trim().slice(0, MAX_MESSAGE_LENGTH);

@@ -17,5 +17,7 @@ export function listingItemDisplayLabel(item: ListingItem): string | null {
     null;
   if (!base) return null;
   const src = formatPartSource(item);
-  return src ? `${base}（${src}）` : base;
+  const qty = item.quantity > 1 ? ` ×${item.quantity}` : "";
+  const label = src ? `${base}（${src}）` : base;
+  return label + qty;
 }

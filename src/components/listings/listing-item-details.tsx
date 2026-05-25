@@ -48,6 +48,11 @@ function ItemCard({
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-sky-600 dark:text-sky-400">
             {ROLE_LABEL[item.role] ?? item.role}
+            {item.quantity > 1 && (
+              <span className="ml-1.5 rounded bg-sky-100 px-1.5 py-0.5 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                ×{item.quantity}
+              </span>
+            )}
             {amount && (
               <span className="ml-2 font-semibold text-emerald-700 dark:text-emerald-400">
                 {amount}

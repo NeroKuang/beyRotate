@@ -7,7 +7,7 @@ import {
 } from "@/components/catalog/catalog-product-search";
 import { Input, Label } from "@/components/ui/input";
 
-type SelectedVariant = CatalogSuggestion & { amount: string };
+type SelectedVariant = CatalogSuggestion & { amount: string; qty: string };
 
 type Props = {
   category: string;
@@ -15,6 +15,7 @@ type Props = {
   label: string;
   required?: boolean;
   listingType?: "sell" | "want" | "trade";
+  initialSelected?: CatalogSuggestion[];
 };
 
 export function MultiVariantPicker({
@@ -23,9 +24,12 @@ export function MultiVariantPicker({
   label,
   required,
   listingType = "sell",
+  initialSelected,
 }: Props) {
   const [q, setQ] = useState("");
-  const [selected, setSelected] = useState<SelectedVariant[]>([]);
+  const [selected, setSelected] = useState<SelectedVariant[]>(
+    () => initialSelected?.map((s) => ({ ...s, amount: "", qty: "1" })) ?? []
+  );
 
   const showAmount = listingType === "sell" || listingType === "want";
   const amountLabel = listingType === "want" ? "預算（TWD）" : "標價（TWD）";
@@ -34,7 +38,7 @@ export function MultiVariantPicker({
     setSelected((prev) =>
       prev.some((s) => s.id === item.id)
         ? prev
-        : [...prev, { ...item, amount: "" }]
+        : [...prev, { ...item, amount: "", qty: "1" }]
     );
   };
 
@@ -42,9 +46,9 @@ export function MultiVariantPicker({
     setSelected((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const updateAmount = (id: string, value: string) => {
+  const updateField = (id: string, field: "amount" | "qty", value: string) => {
     setSelected((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, amount: value } : v))
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
     );
   };
 
@@ -84,22 +88,37 @@ export function MultiVariantPicker({
                   移除
                 </button>
               </div>
-              {showAmount && (
+              <div className={`grid gap-2 ${showAmount ? "sm:grid-cols-2" : ""}`}>
                 <div>
-                  <label className="text-xs text-zinc-500">{amountLabel}</label>
+                  <label className="text-xs text-zinc-500">數量</label>
                   <Input
                     type="number"
                     min={1}
-                    max={999999}
+                    max={999}
                     required
-                    value={v.amount}
-                    onChange={(e) => updateAmount(v.id, e.target.value)}
-                    placeholder="必填"
+                    value={v.qty}
+                    onChange={(e) => updateField(v.id, "qty", e.target.value)}
                     className="mt-0.5"
                   />
                 </div>
-              )}
+                {showAmount && (
+                  <div>
+                    <label className="text-xs text-zinc-500">{amountLabel}（單件）</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={999999}
+                      required
+                      value={v.amount}
+                      onChange={(e) => updateField(v.id, "amount", e.target.value)}
+                      placeholder="必填"
+                      className="mt-0.5"
+                    />
+                  </div>
+                )}
+              </div>
               <input type="hidden" name={name} value={v.id} />
+              <input type="hidden" name="variant_quantities" value={v.qty || "1"} />
               {showAmount && (
                 <input type="hidden" name="variant_amounts" value={v.amount} />
               )}

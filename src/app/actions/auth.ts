@@ -2,11 +2,13 @@
 
 import "@/lib/auth-env";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { encode } from "next-auth/jwt";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth-options";
+import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 
 function sessionCookieName(secure: boolean): string {
   return secure
@@ -24,6 +26,10 @@ export async function loginWithCredentials(formData: FormData) {
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) redirect("/login?error=invalid");
+
+  if (!user.emailVerified) {
+    redirect("/verify-pending?email=" + encodeURIComponent(email));
+  }
 
   const profile = await prisma.profile.findUnique({ where: { id: user.id } });
   const secret = authOptions.secret;
@@ -75,7 +81,6 @@ export async function signUp(formData: FormData) {
     data: {
       email,
       passwordHash,
-      emailVerified: new Date(),
       profile: {
         create: {
           displayName,
@@ -86,7 +91,60 @@ export async function signUp(formData: FormData) {
     },
   });
 
-  redirect("/login?message=registered");
+  await generateAndSendVerification(email);
+  redirect("/verify-pending?email=" + encodeURIComponent(email));
+}
+
+async function generateAndSendVerification(email: string) {
+  const token = crypto.randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: `verify:${email}` },
+  });
+
+  await prisma.verificationToken.create({
+    data: { identifier: `verify:${email}`, token, expires },
+  });
+
+  await sendVerificationEmail(email, token);
+}
+
+export async function resendVerificationEmail(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email) redirect("/register");
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || user.emailVerified) {
+    redirect("/login");
+  }
+
+  await generateAndSendVerification(email);
+  redirect("/verify-pending?email=" + encodeURIComponent(email) + "&resent=1");
+}
+
+export async function verifyEmail(token: string, email: string) {
+  const record = await prisma.verificationToken.findFirst({
+    where: { identifier: `verify:${email}`, token },
+  });
+
+  if (!record || record.expires < new Date()) {
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `verify:${email}`, token },
+    });
+    return { error: "expired" as const };
+  }
+
+  await prisma.user.update({
+    where: { email },
+    data: { emailVerified: new Date() },
+  });
+
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: `verify:${email}` },
+  });
+
+  return { error: null };
 }
 
 export async function requestPasswordReset(formData: FormData) {
@@ -95,7 +153,6 @@ export async function requestPasswordReset(formData: FormData) {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (user) {
-    const crypto = await import("crypto");
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -107,13 +164,7 @@ export async function requestPasswordReset(formData: FormData) {
       data: { identifier: `reset:${email}`, token, expires },
     });
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      process.env.AUTH_URL ??
-      "http://localhost:5001";
-    const resetUrl = `${baseUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-
-    console.log(`[password-reset] ${email} → ${resetUrl}`);
+    await sendPasswordResetEmail(email, token);
   }
 
   redirect("/forgot-password?sent=1");

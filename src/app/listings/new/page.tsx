@@ -1,15 +1,23 @@
 import { redirect } from "next/navigation";
 import { requireVerifiedUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { NewListingForm } from "@/components/listings/new-listing-form";
+import { goShootVariantImageUrl } from "@/lib/go-shoot-images";
+import type { CatalogSuggestion } from "@/components/catalog/catalog-product-search";
 
 export default async function NewListingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    type?: string;
+    offer_kind?: string;
+    variant?: string;
+  }>;
 }) {
   const auth = await requireVerifiedUser();
   if (auth.error === "login") redirect("/login");
-  if (auth.error === "verify") redirect("/login?message=verify");
+  if (auth.error === "verify") redirect("/login?error=verify");
   if (auth.error === "onboarding") redirect("/onboarding");
   if (auth.error === "banned") redirect("/");
 
@@ -26,6 +34,32 @@ export default async function NewListingPage({
     save: "儲存失敗，請稍後再試。",
   };
 
+  let preselectedVariant: CatalogSuggestion | undefined;
+  if (params.variant) {
+    const v = await prisma.catalogVariant.findUnique({
+      where: { id: params.variant },
+      include: { product: true },
+    });
+    if (v) {
+      preselectedVariant = {
+        id: v.id,
+        display_label: v.displayLabel,
+        image_url: goShootVariantImageUrl({
+          productCode: v.product.code,
+          youtubeId: v.youtubeId,
+          bladeAbbr: v.bladeAbbr,
+          ratchetAbbr: v.ratchetAbbr,
+          bitAbbr: v.bitAbbr,
+          meta: v.meta,
+        }),
+        catalog_products: {
+          code: v.product.code,
+          category_id: v.product.categoryId,
+        },
+      };
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">新增刊登</h1>
@@ -34,7 +68,11 @@ export default async function NewListingPage({
           {errors[params.error] ?? params.error}
         </p>
       )}
-      <NewListingForm />
+      <NewListingForm
+        initialType={params.type as "sell" | "want" | "trade" | undefined}
+        initialOfferKind={params.offer_kind as "variant" | "part" | undefined}
+        initialVariant={preselectedVariant}
+      />
     </div>
   );
 }

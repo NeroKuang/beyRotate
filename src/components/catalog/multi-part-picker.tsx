@@ -12,6 +12,7 @@ export type SelectedPartEntry = PartSuggestion & {
   sourceProductCode: string;
   sourcePartSpec: string;
   amount: string;
+  qty: string;
 };
 
 type Props = {
@@ -52,6 +53,7 @@ export function MultiPartPicker({
               sourceProductCode: "",
               sourcePartSpec: "",
               amount: "",
+              qty: "1",
             },
           ]
     );
@@ -63,7 +65,7 @@ export function MultiPartPicker({
 
   const updateField = (
     id: string,
-    field: "sourceProductCode" | "sourcePartSpec" | "amount",
+    field: "sourceProductCode" | "sourcePartSpec" | "amount" | "qty",
     value: string
   ) => {
     setSelected((prev) =>
@@ -159,11 +161,25 @@ export function MultiPartPicker({
                 </button>
               </div>
               <div
-                className={`grid gap-2 ${showAmount ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+                className={`grid gap-2 ${showAmount ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}
               >
+                <div>
+                  <label className="text-xs text-zinc-500">數量</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={999}
+                    required
+                    value={p.qty}
+                    onChange={(e) =>
+                      updateField(p.id, "qty", e.target.value)
+                    }
+                    className="mt-0.5"
+                  />
+                </div>
                 {showAmount && (
                   <div>
-                    <label className="text-xs text-zinc-500">{amountLabel}</label>
+                    <label className="text-xs text-zinc-500">{amountLabel}（單件）</label>
                     <Input
                       type="number"
                       min={1}
@@ -202,6 +218,7 @@ export function MultiPartPicker({
                 </div>
               </div>
               <input type="hidden" name={name} value={p.id} />
+              <input type="hidden" name="part_quantities" value={p.qty || "1"} />
               {showAmount && (
                 <input type="hidden" name="part_amounts" value={p.amount} />
               )}

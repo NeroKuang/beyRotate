@@ -5,7 +5,6 @@ import { createListing } from "@/app/actions/listings";
 import { MultiVariantPicker } from "@/components/catalog/multi-variant-picker";
 import { MultiPartPicker } from "@/components/catalog/multi-part-picker";
 import { VariantPicker } from "@/components/catalog/variant-picker";
-import { Button } from "@/components/ui/button";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { Input, Label, Select } from "@/components/ui/input";
 import {
@@ -14,11 +13,23 @@ import {
   DELIVERY_TAGS,
   CONTACT_PREFS,
 } from "@/lib/constants";
+import type { CatalogSuggestion } from "@/components/catalog/catalog-product-search";
 
-export function NewListingForm() {
-  const [type, setType] = useState<"sell" | "want" | "trade">("sell");
-  const [category, setCategory] = useState("bey");
-  const [offerMode, setOfferMode] = useState<"variant" | "part">("variant");
+interface NewListingFormProps {
+  initialType?: "sell" | "want" | "trade";
+  initialOfferKind?: "variant" | "part";
+  initialVariant?: CatalogSuggestion;
+}
+
+export function NewListingForm({
+  initialType,
+  initialOfferKind,
+  initialVariant,
+}: NewListingFormProps = {}) {
+  const [type, setType] = useState<"sell" | "want" | "trade">(initialType ?? "sell");
+  const initialCategory = initialVariant?.catalog_products?.category_id ?? "bey";
+  const [category, setCategory] = useState(initialCategory);
+  const [offerMode, setOfferMode] = useState<"variant" | "part">(initialOfferKind ?? "variant");
   const [seekMode, setSeekMode] = useState<"catalog" | "text">("catalog");
   const [deliveryTags, setDeliveryTags] = useState<string[]>([]);
   const sellParts = category === "bey" && offerMode === "part";
@@ -106,6 +117,7 @@ export function NewListingForm() {
             label={type === "want" ? "徵求品項（可多件）" : "出售品項（可多件）"}
             listingType={type}
             required
+            initialSelected={initialVariant ? [initialVariant] : undefined}
           />
         )
       ) : sellParts ? (
@@ -156,7 +168,7 @@ export function NewListingForm() {
               name="seek_text"
               maxLength={500}
               rows={3}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm"
+              className="bey-input"
               placeholder="例：任何 CX-17 隱藏款"
             />
           )}
@@ -250,7 +262,7 @@ export function NewListingForm() {
           name="note"
           maxLength={500}
           rows={4}
-          className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm"
+          className="bey-input"
         />
       </div>
 

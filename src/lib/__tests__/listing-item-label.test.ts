@@ -7,6 +7,7 @@ function makeItem(overrides: Partial<ListingItem> = {}): ListingItem {
     id: "it1",
     listing_id: "l1",
     catalog_variant_id: null,
+    quantity: 1,
     role: "offer",
     seek_text: null,
     ...overrides,
@@ -99,5 +100,27 @@ describe("listingItemDisplayLabel", () => {
       source_part_spec: "  ",
     });
     expect(listingItemDisplayLabel(item)).toBe("想要");
+  });
+
+  it("appends quantity suffix when quantity > 1", () => {
+    const item = makeItem({
+      quantity: 3,
+      catalog_variants: {
+        display_label: "BX-01 入門組",
+        build_string: "Wizard.4-60.FB",
+      },
+    });
+    expect(listingItemDisplayLabel(item)).toBe("BX-01 入門組 ×3");
+  });
+
+  it("omits quantity suffix when quantity is 1", () => {
+    const item = makeItem({
+      quantity: 1,
+      catalog_variants: {
+        display_label: "BX-01 入門組",
+        build_string: "Wizard.4-60.FB",
+      },
+    });
+    expect(listingItemDisplayLabel(item)).toBe("BX-01 入門組");
   });
 });
