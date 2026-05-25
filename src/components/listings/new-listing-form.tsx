@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createListing } from "@/app/actions/listings";
 import { MultiVariantPicker } from "@/components/catalog/multi-variant-picker";
 import { MultiPartPicker } from "@/components/catalog/multi-part-picker";
+import { StadiumPicker } from "@/components/catalog/stadium-picker";
 import { VariantPicker } from "@/components/catalog/variant-picker";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -12,12 +13,13 @@ import {
   CONDITIONS,
   DELIVERY_TAGS,
   CONTACT_PREFS,
+  REGIONS,
 } from "@/lib/constants";
 import type { CatalogSuggestion } from "@/components/catalog/catalog-product-search";
 
 interface NewListingFormProps {
   initialType?: "sell" | "want" | "trade";
-  initialOfferKind?: "variant" | "part";
+  initialOfferKind?: "variant" | "part" | "stadium";
   initialVariant?: CatalogSuggestion;
 }
 
@@ -29,10 +31,11 @@ export function NewListingForm({
   const [type, setType] = useState<"sell" | "want" | "trade">(initialType ?? "sell");
   const initialCategory = initialVariant?.catalog_products?.category_id ?? "bey";
   const [category, setCategory] = useState(initialCategory);
-  const [offerMode, setOfferMode] = useState<"variant" | "part">(initialOfferKind ?? "variant");
+  const [offerMode, setOfferMode] = useState<"variant" | "part" | "stadium">(initialOfferKind ?? "variant");
   const [seekMode, setSeekMode] = useState<"catalog" | "text">("catalog");
   const [deliveryTags, setDeliveryTags] = useState<string[]>([]);
   const sellParts = category === "bey" && offerMode === "part";
+  const sellStadiums = category === "bey" && offerMode === "stadium";
   const perItemPricing = type === "sell" || type === "want";
 
   const toggleDelivery = (value: string) => {
@@ -95,6 +98,16 @@ export function NewListingForm({
               />
               單獨零件（刃／核輪／軸心）
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="offer_kind"
+                value="stadium"
+                checked={offerMode === "stadium"}
+                onChange={() => setOfferMode("stadium")}
+              />
+              戰鬥盤
+            </label>
           </div>
         </div>
       )}
@@ -103,7 +116,13 @@ export function NewListingForm({
       )}
 
       {type === "sell" || type === "want" ? (
-        sellParts ? (
+        sellStadiums ? (
+          <StadiumPicker
+            label={type === "want" ? "徵求戰鬥盤（可多件）" : "出售戰鬥盤（可多件）"}
+            listingType={type}
+            required
+          />
+        ) : sellParts ? (
           <MultiPartPicker
             name="part_ids"
             label={type === "want" ? "徵求零件（可多件）" : "出售零件（可多件）"}
@@ -120,6 +139,12 @@ export function NewListingForm({
             initialSelected={initialVariant ? [initialVariant] : undefined}
           />
         )
+      ) : sellStadiums ? (
+        <StadiumPicker
+          label="我提供的戰鬥盤"
+          listingType={type}
+          required
+        />
       ) : sellParts ? (
         <MultiPartPicker
           name="part_ids"
@@ -226,7 +251,14 @@ export function NewListingForm({
 
       <div>
         <Label>地區</Label>
-        <Input name="region" placeholder="例：台北市、可郵寄" />
+        <Select name="region">
+          <option value="">— 請選擇 —</option>
+          {REGIONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <div>

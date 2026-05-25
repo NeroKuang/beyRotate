@@ -51,6 +51,49 @@ export const CONTACT_PREFS = [
   { value: "both", label: "站內 + 外部" },
 ] as const;
 
+export const STADIUM_TYPES = [
+  { value: "xtreme", label: "極限盤" },
+  { value: "impact", label: "衝擊盤（一般盤）" },
+  { value: "electric", label: "電動盤" },
+  { value: "dragon", label: "飛龍盤" },
+] as const;
+
+export function stadiumTypeLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return STADIUM_TYPES.find((s) => s.value === value)?.label ?? value;
+}
+
+export const REGIONS = [
+  { value: "taipei", label: "台北市" },
+  { value: "new_taipei", label: "新北市" },
+  { value: "taoyuan", label: "桃園市" },
+  { value: "taichung", label: "台中市" },
+  { value: "tainan", label: "台南市" },
+  { value: "kaohsiung", label: "高雄市" },
+  { value: "keelung", label: "基隆市" },
+  { value: "hsinchu_city", label: "新竹市" },
+  { value: "hsinchu_county", label: "新竹縣" },
+  { value: "miaoli", label: "苗栗縣" },
+  { value: "changhua", label: "彰化縣" },
+  { value: "nantou", label: "南投縣" },
+  { value: "yunlin", label: "雲林縣" },
+  { value: "chiayi_city", label: "嘉義市" },
+  { value: "chiayi_county", label: "嘉義縣" },
+  { value: "pingtung", label: "屏東縣" },
+  { value: "yilan", label: "宜蘭縣" },
+  { value: "hualien", label: "花蓮縣" },
+  { value: "taitung", label: "台東縣" },
+  { value: "penghu", label: "澎湖縣" },
+  { value: "kinmen", label: "金門縣" },
+  { value: "lienchiang", label: "連江縣" },
+  { value: "overseas", label: "海外" },
+] as const;
+
+export function regionLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return REGIONS.find((r) => r.value === value)?.label ?? value;
+}
+
 export const REPORT_REASONS = [
   { value: "scam", label: "詐騙／詐騙嫌疑" },
   { value: "fake", label: "假貨" },

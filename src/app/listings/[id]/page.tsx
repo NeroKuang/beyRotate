@@ -17,7 +17,7 @@ import { listingPriceLabel } from "@/lib/listing-price";
 import { listingInclude, mapListing } from "@/lib/queries/listings";
 import { resolveListingGalleryUrls } from "@/lib/listing-images";
 import { GO_SHOOT_ATTRIBUTION } from "@/lib/go-shoot-images";
-import { conditionLabel, deliveryTagLabel } from "@/lib/constants";
+import { conditionLabel, deliveryTagLabel, regionLabel } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -155,7 +155,7 @@ export default async function ListingDetailPage({
             )}
             <div>
               <dt className="text-zinc-500">地區</dt>
-              <dd>{listing.region ?? "—"}</dd>
+              <dd>{regionLabel(listing.region) ?? "—"}</dd>
             </div>
             {(listing.delivery_tags?.length ?? 0) > 0 && (
               <div>

@@ -5,6 +5,7 @@ import {
   CatalogProductSearch,
   type CatalogSuggestion,
 } from "@/components/catalog/catalog-product-search";
+import { ProductImage } from "@/components/ui/product-image";
 import { Input, Label } from "@/components/ui/input";
 
 type SelectedVariant = CatalogSuggestion & { amount: string; qty: string };
@@ -73,8 +74,13 @@ export function MultiVariantPicker({
               key={v.id}
               className="space-y-2 text-sm border-b border-zinc-100 dark:border-zinc-800 last:border-0 pb-2 last:pb-0"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
+              <div className="flex items-start gap-3">
+                <ProductImage
+                  src={v.image_url}
+                  alt={v.display_label}
+                  containerClassName="h-14 w-14 shrink-0 rounded-lg"
+                />
+                <div className="min-w-0 flex-1">
                   <span className="text-xs text-zinc-500 font-mono">
                     {i + 1}. {v.catalog_products?.code}
                   </span>

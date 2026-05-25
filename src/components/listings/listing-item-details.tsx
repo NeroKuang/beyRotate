@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ProductImage } from "@/components/ui/product-image";
 import { slotLabel } from "@/lib/catalog/part-groups";
+import { stadiumTypeLabel } from "@/lib/constants";
 import { resolveItemImageUrl } from "@/lib/listing-images";
 import { listingItemAmountLabel } from "@/lib/listing-price";
 import { listingItemDisplayLabel } from "@/lib/listing-item-label";
@@ -102,7 +103,14 @@ function ItemCard({
         </dl>
       )}
 
-      {!v && !p && item.seek_text && (
+      {item.item_kind === "stadium" && item.seek_text && (
+        <dl className="mt-4 space-y-1.5 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+          <SpecRow label="類型" value="戰鬥盤" />
+          <SpecRow label="種類" value={stadiumTypeLabel(item.seek_text) ?? item.seek_text} />
+        </dl>
+      )}
+
+      {!v && !p && item.item_kind !== "stadium" && item.seek_text && (
         <p className="mt-3 border-t border-zinc-100 pt-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
           {item.seek_text}
         </p>

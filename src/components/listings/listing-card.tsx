@@ -5,6 +5,7 @@ import { formatDate, cn } from "@/lib/utils";
 import { resolveListingCoverUrl } from "@/lib/listing-images";
 import { listingItemDisplayLabel } from "@/lib/listing-item-label";
 import { listingPriceLabel } from "@/lib/listing-price";
+import { regionLabel } from "@/lib/constants";
 import { ProductImage } from "@/components/ui/product-image";
 import type { ListingWithRelations } from "@/types/database";
 
@@ -69,7 +70,7 @@ export function ListingCard({ listing }: { listing: ListingWithRelations }) {
           )}
         </p>
         <p className="text-xs text-zinc-500 truncate">
-          {listing.region ?? "—"} · {formatDate(listing.published_at ?? listing.created_at)}
+          {regionLabel(listing.region) ?? "—"} · {formatDate(listing.published_at ?? listing.created_at)}
         </p>
       </div>
     </Link>

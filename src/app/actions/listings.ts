@@ -22,7 +22,8 @@ export async function createListing(formData: FormData) {
   const type = String(formData.get("type")) as "sell" | "want" | "trade";
   const offerKind = String(formData.get("offer_kind") ?? "variant") as
     | "variant"
-    | "part";
+    | "part"
+    | "stadium";
   const formParams = `type=${type}&offer_kind=${offerKind}`;
   const listingNewErr = (code: string) => `/listings/new?error=${code}&${formParams}`;
   const variantId = String(formData.get("variant_id") ?? "");
@@ -42,13 +43,17 @@ export async function createListing(formData: FormData) {
   const variantAmounts = parseItemAmounts(formData, "variant_amounts");
   const variantQuantities = formData.getAll("variant_quantities").map((v) => Math.max(1, parseInt(String(v), 10) || 1));
   const partQuantities = formData.getAll("part_quantities").map((v) => Math.max(1, parseInt(String(v), 10) || 1));
+  const stadiumTypes = formData.getAll("stadium_types").map((v) => String(v)).filter(Boolean);
+  const stadiumAmounts = parseItemAmounts(formData, "stadium_amounts");
+  const stadiumQuantities = formData.getAll("stadium_quantities").map((v) => Math.max(1, parseInt(String(v), 10) || 1));
   const seekVariantId = String(formData.get("seek_variant_id") ?? "");
   const seekText = String(formData.get("seek_text") ?? "").trim();
   const publish = formData.get("publish") === "on";
   const hasPerItemPricing =
     (type === "sell" || type === "want") &&
     ((offerKind === "part" && partIds.length > 0) ||
-      (offerKind === "variant" && offerVariantIds.length > 0));
+      (offerKind === "variant" && offerVariantIds.length > 0) ||
+      (offerKind === "stadium" && stadiumTypes.length > 0));
 
   let price = formData.get("price")
     ? parseInt(String(formData.get("price")), 10)
@@ -59,16 +64,20 @@ export async function createListing(formData: FormData) {
 
   if (type === "sell" && hasPerItemPricing) {
     const amounts =
-      offerKind === "part" ? partAmounts : variantAmounts;
-    if (!validateItemAmounts(amounts, offerKind === "part" ? partIds.length : offerVariantIds.length)) {
+      offerKind === "stadium" ? stadiumAmounts : offerKind === "part" ? partAmounts : variantAmounts;
+    const count =
+      offerKind === "stadium" ? stadiumTypes.length : offerKind === "part" ? partIds.length : offerVariantIds.length;
+    if (!validateItemAmounts(amounts, count)) {
       redirect(listingNewErr("item_price"));
     }
     price = listingSellPriceFromItems(amounts);
   }
   if (type === "want" && hasPerItemPricing) {
     const amounts =
-      offerKind === "part" ? partAmounts : variantAmounts;
-    if (!validateItemAmounts(amounts, offerKind === "part" ? partIds.length : offerVariantIds.length)) {
+      offerKind === "stadium" ? stadiumAmounts : offerKind === "part" ? partAmounts : variantAmounts;
+    const count =
+      offerKind === "stadium" ? stadiumTypes.length : offerKind === "part" ? partIds.length : offerVariantIds.length;
+    if (!validateItemAmounts(amounts, count)) {
       redirect(listingNewErr("item_price"));
     }
     budget = listingWantBudgetFromItems(amounts);
@@ -101,7 +110,9 @@ export async function createListing(formData: FormData) {
     .filter((v) => DELIVERY_TAG_VALUES.has(v));
   if (deliveryTags.length === 0) redirect(listingNewErr("delivery"));
 
-  if (offerKind === "part") {
+  if (offerKind === "stadium") {
+    if (!stadiumTypes.length) redirect(listingNewErr("stadium"));
+  } else if (offerKind === "part") {
     if (!partIds.length) redirect(listingNewErr("part"));
   } else if (!offerVariantIds.length) {
     redirect(listingNewErr("variant"));
@@ -111,88 +122,106 @@ export async function createListing(formData: FormData) {
     redirect(listingNewErr("seek"));
   }
 
-  const listing = await prisma.$transaction(async (tx) => {
-    const created = await tx.listing.create({
-      data: {
-        userId: auth.user.id,
-        type,
-        status: publish ? "active" : "draft",
-        customTitle: String(formData.get("custom_title") || "") || null,
-        price: type === "sell" ? price : null,
-        budget: type === "want" ? budget : null,
-        cashDiff: type === "trade" ? cashDiff : null,
-        negotiable: formData.get("negotiable") === "on",
-        condition: (String(formData.get("condition") || "") || null) as
-          | "new"
-          | "like_new"
-          | "used"
-          | "parts"
-          | null,
-        region: String(formData.get("region") || "") || null,
-        deliveryTags,
-        note: note || null,
-        contactPref: (String(formData.get("contact_pref") || "in_app")) as
-          | "in_app"
-          | "external"
-          | "both",
-        acceptInquiriesWhileReserved:
-          formData.get("accept_inquiries_while_reserved") !== "off",
-        publishedAt: publish ? new Date() : null,
-      },
-    });
-
-    if (offerKind === "part") {
-      await tx.listingItem.createMany({
-        data: partIds.map((catalogPartId, i) => ({
-          listingId: created.id,
-          itemKind: "part" as const,
-          catalogPartId,
-          sourceProductCode:
-            (partSourceCodes[i] ?? "").trim().slice(0, 32) || null,
-          sourcePartSpec: (partSourceSpecs[i] ?? "").trim().slice(0, 64) || null,
-          quantity: partQuantities[i] ?? 1,
-          price: type === "sell" ? partAmounts[i] : null,
-          budget: type === "want" ? partAmounts[i] : null,
-          role: "offer" as const,
-        })),
+  let listing;
+  try {
+    listing = await prisma.$transaction(async (tx) => {
+      const created = await tx.listing.create({
+        data: {
+          userId: auth.user.id,
+          type,
+          status: publish ? "active" : "draft",
+          customTitle: String(formData.get("custom_title") || "") || null,
+          price: type === "sell" ? price : null,
+          budget: type === "want" ? budget : null,
+          cashDiff: type === "trade" ? cashDiff : null,
+          negotiable: formData.get("negotiable") === "on",
+          condition: (String(formData.get("condition") || "") || null) as
+            | "new"
+            | "like_new"
+            | "used"
+            | "parts"
+            | null,
+          region: String(formData.get("region") || "") || null,
+          deliveryTags,
+          note: note || null,
+          contactPref: (String(formData.get("contact_pref") || "in_app")) as
+            | "in_app"
+            | "external"
+            | "both",
+          acceptInquiriesWhileReserved:
+            formData.get("accept_inquiries_while_reserved") !== "off",
+          publishedAt: publish ? new Date() : null,
+        },
       });
-    } else {
-      await tx.listingItem.createMany({
-        data: offerVariantIds.map((catalogVariantId, i) => ({
-          listingId: created.id,
-          itemKind: "variant" as const,
-          catalogVariantId,
-          quantity: variantQuantities[i] ?? 1,
-          price: type === "sell" ? variantAmounts[i] : null,
-          budget: type === "want" ? variantAmounts[i] : null,
-          role: "offer" as const,
-        })),
-      });
-    }
 
-    if (type === "trade") {
-      if (seekVariantId) {
-        await tx.listingItem.create({
-          data: {
+      if (offerKind === "stadium") {
+        await tx.listingItem.createMany({
+          data: stadiumTypes.map((stadiumType, i) => ({
             listingId: created.id,
-            itemKind: "variant",
-            catalogVariantId: seekVariantId,
-            role: "seek",
-          },
+            itemKind: "stadium" as const,
+            seekText: stadiumType,
+            quantity: stadiumQuantities[i] ?? 1,
+            price: type === "sell" ? stadiumAmounts[i] : null,
+            budget: type === "want" ? stadiumAmounts[i] : null,
+            role: "offer" as const,
+          })),
         });
-      } else if (seekText) {
-        await tx.listingItem.create({
-          data: {
+      } else if (offerKind === "part") {
+        await tx.listingItem.createMany({
+          data: partIds.map((catalogPartId, i) => ({
             listingId: created.id,
-            role: "seek",
-            seekText: seekText.slice(0, MAX_SEEK_TEXT),
-          },
+            itemKind: "part" as const,
+            catalogPartId,
+            sourceProductCode:
+              (partSourceCodes[i] ?? "").trim().slice(0, 32) || null,
+            sourcePartSpec: (partSourceSpecs[i] ?? "").trim().slice(0, 64) || null,
+            quantity: partQuantities[i] ?? 1,
+            price: type === "sell" ? partAmounts[i] : null,
+            budget: type === "want" ? partAmounts[i] : null,
+            role: "offer" as const,
+          })),
+        });
+      } else {
+        await tx.listingItem.createMany({
+          data: offerVariantIds.map((catalogVariantId, i) => ({
+            listingId: created.id,
+            itemKind: "variant" as const,
+            catalogVariantId,
+            quantity: variantQuantities[i] ?? 1,
+            price: type === "sell" ? variantAmounts[i] : null,
+            budget: type === "want" ? variantAmounts[i] : null,
+            role: "offer" as const,
+          })),
         });
       }
-    }
 
-    return created;
-  });
+      if (type === "trade") {
+        if (seekVariantId) {
+          await tx.listingItem.create({
+            data: {
+              listingId: created.id,
+              itemKind: "variant",
+              catalogVariantId: seekVariantId,
+              role: "seek",
+            },
+          });
+        } else if (seekText) {
+          await tx.listingItem.create({
+            data: {
+              listingId: created.id,
+              role: "seek",
+              seekText: seekText.slice(0, MAX_SEEK_TEXT),
+            },
+          });
+        }
+      }
+
+      return created;
+    });
+  } catch (err) {
+    console.error("[createListing] DB error:", err);
+    redirect(listingNewErr("save"));
+  }
 
   revalidatePath("/");
   await attachDefaultListingImages(listing.id);

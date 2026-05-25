@@ -1,3 +1,4 @@
+import { stadiumTypeLabel } from "@/lib/constants";
 import type { ListingItem } from "@/types/database";
 
 function formatPartSource(item: ListingItem): string | null {
@@ -10,9 +11,13 @@ function formatPartSource(item: ListingItem): string | null {
 }
 
 export function listingItemDisplayLabel(item: ListingItem): string | null {
+  const stadiumLabel = item.item_kind === "stadium" && item.seek_text
+    ? stadiumTypeLabel(item.seek_text) ?? item.seek_text
+    : null;
   const base =
     item.catalog_variants?.display_label ??
     item.catalog_parts?.display_label ??
+    stadiumLabel ??
     item.seek_text ??
     null;
   if (!base) return null;

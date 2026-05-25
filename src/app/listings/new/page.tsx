@@ -30,6 +30,7 @@ export default async function NewListingPage({
     price: "請填寫標價。",
     budget: "請填寫預算。",
     seek: "交換請填寫「想要」的品項或文字。",
+    stadium: "請選擇至少一種戰鬥盤。",
     delivery: "請至少選擇一種交易方式。",
     save: "儲存失敗，請稍後再試。",
   };

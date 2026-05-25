@@ -6,7 +6,7 @@ import {
   type PartSuggestion,
 } from "@/components/catalog/catalog-part-search";
 import { Input, Label } from "@/components/ui/input";
-import { ALL_PART_SLOTS, type PartSlot } from "@/lib/catalog/part-groups";
+import { ALL_PART_SLOTS, slotLabel, type PartSlot } from "@/lib/catalog/part-groups";
 
 export type SelectedPartEntry = PartSuggestion & {
   sourceProductCode: string;
@@ -147,8 +147,17 @@ export function MultiPartPicker({
               key={p.id}
               className="space-y-2 text-sm border-b border-zinc-100 dark:border-zinc-800 last:border-0 pb-3 last:pb-0"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
+              <div className="flex items-start gap-3">
+                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                  p.part_type === "ratchet"
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                    : p.part_type === "bit"
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                      : "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                }`}>
+                  {slotLabel(p.part_type, p.part_group)}
+                </span>
+                <div className="min-w-0 flex-1">
                   <span className="text-xs text-zinc-500">{i + 1}.</span>
                   <div className="font-medium leading-snug">{p.display_label}</div>
                 </div>

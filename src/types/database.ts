@@ -57,7 +57,7 @@ export interface ListingWithRelations extends Listing {
 export interface ListingItem {
   id: string;
   listing_id: string;
-  item_kind?: "variant" | "part";
+  item_kind?: "variant" | "part" | "stadium";
   catalog_variant_id: string | null;
   catalog_part_id?: string | null;
   source_product_code?: string | null;

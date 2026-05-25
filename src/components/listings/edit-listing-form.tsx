@@ -8,6 +8,7 @@ import {
   DELIVERY_TAGS,
   CONTACT_PREFS,
   LISTING_STATUSES,
+  REGIONS,
 } from "@/lib/constants";
 
 type ListingData = {
@@ -149,12 +150,18 @@ export function EditListingForm({
 
       <div>
         <Label>地區</Label>
-        <Input
+        <Select
           name="region"
           defaultValue={listing.region ?? ""}
-          placeholder="例：台北市、可郵寄"
           className="bey-input"
-        />
+        >
+          <option value="">— 請選擇 —</option>
+          {REGIONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <div>

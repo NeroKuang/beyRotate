@@ -235,6 +235,7 @@ enum ItemRole {
 enum ListingItemKind {
   variant
   part
+  stadium
 }
 
 model Listing {
