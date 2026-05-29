@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { applyWatermark } from "@/lib/watermark";
-import { uploadToImgur } from "@/lib/storage";
+import { uploadToImgur, deleteStoredImage } from "@/lib/image-storage";
 import { MAX_LISTING_IMAGES, MAX_IMAGE_BYTES } from "@/lib/constants";
 
 export async function POST(
@@ -54,9 +54,9 @@ export async function POST(
     return NextResponse.json({ error: "圖片處理失敗" }, { status: 500 });
   }
 
-  let imgurUrl: string;
+  let uploaded: Awaited<ReturnType<typeof uploadToImgur>>;
   try {
-    imgurUrl = await uploadToImgur(processed);
+    uploaded = await uploadToImgur(processed);
   } catch (err) {
     console.error("[image upload] Imgur error:", err);
     return NextResponse.json({ error: "圖片儲存失敗，請確認 IMGUR_CLIENT_ID 設定" }, { status: 500 });
@@ -65,14 +65,15 @@ export async function POST(
   const image = await prisma.listingImage.create({
     data: {
       listingId,
-      storagePath: imgurUrl,
+      storagePath: uploaded.url,
+      deleteHash: uploaded.deleteHash,
       sortOrder: existingCount,
     },
   });
 
   return NextResponse.json({
     id: image.id,
-    url: imgurUrl,
+    url: uploaded.url,
     sort_order: image.sortOrder,
   });
 }
@@ -99,6 +100,21 @@ export async function DELETE(
   const { imageId } = await request.json();
   if (!imageId) {
     return NextResponse.json({ error: "缺少 imageId" }, { status: 400 });
+  }
+
+  const image = await prisma.listingImage.findFirst({
+    where: { id: imageId, listingId },
+    select: { storagePath: true, deleteHash: true },
+  });
+  if (!image) {
+    return NextResponse.json({ error: "找不到圖片" }, { status: 404 });
+  }
+
+  try {
+    await deleteStoredImage(image.storagePath, image.deleteHash);
+  } catch (err) {
+    console.error("[image delete] remote delete failed:", err);
+    return NextResponse.json({ error: "遠端圖片刪除失敗" }, { status: 500 });
   }
 
   await prisma.listingImage.deleteMany({

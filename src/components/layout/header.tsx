@@ -41,7 +41,7 @@ export async function Header() {
             市集
           </Link>
           <Link href="/catalog" className="hover:underline hidden sm:inline">
-            產品目錄
+            產品目錄／均價
           </Link>
           {user ? (
             <>

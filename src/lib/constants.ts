@@ -8,6 +8,16 @@ export const MAX_NOTE_LENGTH = 500;
 export const MAX_SEEK_TEXT = 500;
 export const MAX_MESSAGE_LENGTH = 500;
 
+/** 公開刊登最長上架天數，逾時自動關閉並清除上傳圖片 */
+export const LISTING_PUBLISH_TTL_DAYS = 14;
+/** 已結束刊登保留圖片天數（備援清理；主要於到期關閉時立即刪圖） */
+export const IMAGE_CLEANUP_RETENTION_DAYS = 14;
+/** 草稿刊登保留圖片天數 */
+export const DRAFT_IMAGE_RETENTION_DAYS = 30;
+
+export const LISTING_TTL_NOTICE =
+  `公開刊登將在發布後 ${LISTING_PUBLISH_TTL_DAYS} 天自動關閉，上傳的實拍圖也會一併移除。`;
+
 export const LISTING_TYPES = [
   { value: "sell", label: "出售" },
   { value: "want", label: "徵求" },
@@ -61,6 +71,20 @@ export const STADIUM_TYPES = [
 export function stadiumTypeLabel(value: string | null | undefined): string | null {
   if (!value) return null;
   return STADIUM_TYPES.find((s) => s.value === value)?.label ?? value;
+}
+
+export const TOURNAMENT_FORMATS = [
+  { value: "single_elim", label: "單淘汰" },
+  { value: "double_elim", label: "雙淘汰" },
+  { value: "swiss", label: "瑞士制" },
+  { value: "round_robin", label: "循環賽" },
+  { value: "free", label: "自由對戰" },
+  { value: "other", label: "其他" },
+] as const;
+
+export function tournamentFormatLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return TOURNAMENT_FORMATS.find((f) => f.value === value)?.label ?? value;
 }
 
 export const REGIONS = [

@@ -9,6 +9,7 @@ import {
   CONTACT_PREFS,
   LISTING_STATUSES,
   REGIONS,
+  LISTING_TTL_NOTICE,
 } from "@/lib/constants";
 
 type ListingData = {
@@ -52,6 +53,14 @@ export function EditListingForm({
   return (
     <form action={action} className="space-y-6 max-w-xl">
       <input type="hidden" name="id" value={listing.id} />
+      {(listing.status === "active" || listing.status === "reserved") && (
+        <p
+          role="note"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          {LISTING_TTL_NOTICE}
+        </p>
+      )}
 
       <div>
         <Label>狀態</Label>

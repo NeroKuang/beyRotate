@@ -12,6 +12,7 @@ import {
 import { resolveItemImageUrlFromDb } from "@/lib/listing-images";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { invalidateMarketPriceCache } from "@/lib/catalog/market-prices";
 
 const DELIVERY_TAG_VALUES = new Set<string>(DELIVERY_TAGS.map((t) => t.value));
 
@@ -223,7 +224,9 @@ export async function createListing(formData: FormData) {
     redirect(listingNewErr("save"));
   }
 
+  invalidateMarketPriceCache();
   revalidatePath("/");
+  revalidatePath("/catalog");
   await attachDefaultListingImages(listing.id);
   redirect(publish ? `/listings/${listing.id}` : `/listings/${listing.id}/edit`);
 }
@@ -319,8 +322,10 @@ export async function updateListing(formData: FormData) {
 
   await prisma.listing.update({ where: { id }, data });
 
+  invalidateMarketPriceCache();
   revalidatePath(`/listings/${id}`);
   revalidatePath("/dashboard");
+  revalidatePath("/catalog");
   redirect(`/listings/${id}`);
 }
 
@@ -333,8 +338,10 @@ export async function updateListingStatus(listingId: string, status: string) {
     data: { status: status as "active" | "reserved" | "sold" | "closed" },
   });
 
+  invalidateMarketPriceCache();
   revalidatePath(`/listings/${listingId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/catalog");
 }
 
 export async function updateListingStatusAction(formData: FormData) {

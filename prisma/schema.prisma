@@ -84,9 +84,11 @@ model Profile {
 
   user         User          @relation(fields: [id], references: [id], onDelete: Cascade)
   settings     UserSettings?
-  listings     Listing[]
-  blocksGiven  UserBlock[]   @relation("blocker")
-  blocksGot    UserBlock[]   @relation("blocked")
+  listings            Listing[]
+  tournaments         Tournament[]
+  tournamentInterests TournamentInterest[]
+  blocksGiven         UserBlock[]   @relation("blocker")
+  blocksGot           UserBlock[]   @relation("blocked")
 
   @@map("profiles")
 }
@@ -295,6 +297,7 @@ model ListingImage {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   listingId   String   @map("listing_id") @db.Uuid
   storagePath String   @map("storage_path")
+  deleteHash  String?  @map("delete_hash")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -410,4 +413,56 @@ model AdminAuditLog {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("admin_audit_logs")
+}
+
+enum TournamentStatus {
+  draft
+  published
+  cancelled
+}
+
+model Tournament {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizerId          String           @map("organizer_id") @db.Uuid
+  title                String
+  description          String?          @db.Text
+  prizes               String?          @db.Text
+  posterPath           String?          @map("poster_path")
+  posterDeleteHash     String?          @map("poster_delete_hash")
+  region               String
+  venue                String?
+  startsAt             DateTime         @map("starts_at") @db.Timestamptz(6)
+  endsAt               DateTime?        @map("ends_at") @db.Timestamptz(6)
+  registrationMethod   String           @map("registration_method") @db.Text
+  registrationUrl      String?          @map("registration_url")
+  registrationDeadline DateTime?        @map("registration_deadline") @db.Timestamptz(6)
+  contactInfo          String?          @map("contact_info") @db.Text
+  format               String?
+  entryFee             String?          @map("entry_fee")
+  maxParticipants      Int?             @map("max_participants")
+  rules                String?          @db.Text
+  status               TournamentStatus @default(draft)
+  publishedAt          DateTime?        @map("published_at") @db.Timestamptz(6)
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organizer Profile              @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  interests TournamentInterest[]
+
+  @@index([status, startsAt])
+  @@index([region, startsAt])
+  @@index([organizerId])
+  @@map("tournaments")
+}
+
+model TournamentInterest {
+  tournamentId String   @map("tournament_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       Profile    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tournamentId, userId])
+  @@map("tournament_interests")
 }

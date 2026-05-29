@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { goShootProductImageUrl } from "@/lib/go-shoot-product-images";
 import { ProductImage } from "@/components/ui/product-image";
+import { MarketPriceCell } from "@/components/catalog/market-price-cell";
+import { EMPTY_MARKET_STATS, type MarketPriceStats } from "@/lib/catalog/market-prices";
 import type { CatalogGroupDto } from "@/lib/catalog/types";
 
 export function ProductGroups({
   groups,
   showSeriesBadge = false,
+  marketPrices = {},
 }: {
   groups: CatalogGroupDto[];
   showSeriesBadge?: boolean;
+  marketPrices?: Record<string, MarketPriceStats>;
 }) {
   if (groups.length === 0) {
     return (
@@ -62,6 +66,7 @@ export function ProductGroups({
                     <th className="px-4 py-2 font-medium w-32">核輪</th>
                     <th className="px-4 py-2 font-medium w-24">軸心</th>
                     <th className="px-4 py-2 font-medium w-20">塗裝</th>
+                    <th className="px-4 py-2 font-medium min-w-[11rem]">市集均價</th>
                     <th className="px-4 py-2 w-16" />
                   </tr>
                 </thead>
@@ -91,6 +96,9 @@ export function ProductGroups({
                         <div>{v.bit_name_zh ?? "—"}</div>
                       </td>
                       <td className="px-4 py-2 align-top text-zinc-600">{v.coat ?? "—"}</td>
+                      <td className="px-4 py-2 align-top">
+                        <MarketPriceCell stats={marketPrices[v.id] ?? EMPTY_MARKET_STATS} />
+                      </td>
                       <td className="px-4 py-2 align-top">
                         <Link
                           href={`/listings/new?variant=${v.id}`}

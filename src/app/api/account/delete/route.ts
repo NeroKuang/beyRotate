@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { purgeListingImages } from "@/lib/cleanup-listing-images";
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -10,6 +11,13 @@ export async function POST() {
   }
 
   const userId = session.user.id;
+  const listingIds = (
+    await prisma.listing.findMany({
+      where: { userId },
+      select: { id: true },
+    })
+  ).map((l) => l.id);
+  await purgeListingImages(listingIds);
   await prisma.listing.deleteMany({ where: { userId } });
   await prisma.user.delete({ where: { id: userId } });
 

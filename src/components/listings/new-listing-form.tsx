@@ -14,6 +14,7 @@ import {
   DELIVERY_TAGS,
   CONTACT_PREFS,
   REGIONS,
+  LISTING_TTL_NOTICE,
 } from "@/lib/constants";
 import type { CatalogSuggestion } from "@/components/catalog/catalog-product-search";
 
@@ -46,6 +47,12 @@ export function NewListingForm({
 
   return (
     <form action={createListing} className="space-y-6 max-w-xl">
+      <p
+        role="note"
+        className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
+      >
+        {LISTING_TTL_NOTICE} 到期後狀態會改為「已關閉」，實拍圖將從 Imgur 移除。
+      </p>
       <div>
         <Label>刊登類型</Label>
         <Select

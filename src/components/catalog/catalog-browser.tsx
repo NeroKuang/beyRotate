@@ -7,6 +7,7 @@ import { ProductGroups } from "@/components/catalog/product-groups";
 import { SeriesTabs, type SeriesTab } from "@/components/catalog/series-tabs";
 import { BeyEmptyState } from "@/components/layout/bey-empty-state";
 import type { CatalogGroupDto } from "@/lib/catalog/types";
+import type { MarketPriceStats } from "@/lib/catalog/market-prices";
 
 type Props = {
   initialCategory: string;
@@ -27,7 +28,30 @@ export function CatalogBrowser({ initialCategory, initialQ }: Props) {
   const [codes, setCodes] = useState<string[]>([]);
   const [seriesTabs, setSeriesTabs] = useState<SeriesTab[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [marketPrices, setMarketPrices] = useState<Record<string, MarketPriceStats>>({});
   const [loading, setLoading] = useState(false);
+
+  const loadMarketPrices = useCallback(async (variantIds: string[]) => {
+    if (variantIds.length === 0) {
+      setMarketPrices({});
+      return;
+    }
+    try {
+      const chunkSize = 200;
+      const merged: Record<string, MarketPriceStats> = {};
+      for (let i = 0; i < variantIds.length; i += chunkSize) {
+        const chunk = variantIds.slice(i, i + chunkSize);
+        const res = await fetch(
+          `/api/catalog/market-prices?variant_ids=${chunk.join(",")}`,
+        );
+        const data = await res.json();
+        Object.assign(merged, data.variants ?? {});
+      }
+      setMarketPrices(merged);
+    } catch {
+      setMarketPrices({});
+    }
+  }, []);
 
   const loadGroups = useCallback(async (cat: string, ser: string, query: string) => {
     setLoading(true);
@@ -53,9 +77,13 @@ export function CatalogBrowser({ initialCategory, initialQ }: Props) {
       const groupsData = await groupsRes.json();
       const codesData = await codesRes.json();
       const statsData = await statsRes.json();
-      setGroups(groupsData.groups ?? []);
+      const nextGroups: CatalogGroupDto[] = groupsData.groups ?? [];
+      setGroups(nextGroups);
       setCodes(codesData.codes ?? []);
       setStats(statsData);
+
+      const variantIds = nextGroups.flatMap((g) => g.variants.map((v) => v.id));
+      void loadMarketPrices(variantIds);
 
       if (seriesRes) {
         const seriesData = await seriesRes.json();
@@ -88,7 +116,7 @@ export function CatalogBrowser({ initialCategory, initialQ }: Props) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadMarketPrices]);
 
   useEffect(() => {
     if (category !== "bey") setSeries("all");
@@ -176,7 +204,11 @@ export function CatalogBrowser({ initialCategory, initialQ }: Props) {
           description="目錄尚未同步，請聯繫管理員執行同步。"
         />
       ) : (
-        <ProductGroups groups={groups} showSeriesBadge={series === "all"} />
+        <ProductGroups
+          groups={groups}
+          showSeriesBadge={series === "all"}
+          marketPrices={marketPrices}
+        />
       )}
     </>
   );

@@ -58,6 +58,20 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
   "https://你的網域/api/cron/sync-catalog"
 ```
 
+每日自動關閉逾 **14 天**的公開刊登，並刪除其上傳圖片（建議每天執行）：
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
+  "https://你的網域/api/cron/expire-listings"
+```
+
+備援清理已結束刊登／過期草稿的遠端圖（目錄 go-shoot 預設圖不刪）：
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
+  "https://你的網域/api/cron/cleanup-images"
+```
+
 （Zeabur 若提供 Scheduled Job，亦可指向同一路徑。）
 
 ## 常見問題

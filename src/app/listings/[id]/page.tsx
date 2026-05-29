@@ -19,6 +19,8 @@ import { resolveListingGalleryUrls } from "@/lib/listing-images";
 import { GO_SHOOT_ATTRIBUTION } from "@/lib/go-shoot-images";
 import { conditionLabel, deliveryTagLabel, regionLabel } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { listingExpiryLabel } from "@/lib/listing-expiry";
+import { LISTING_PUBLISH_TTL_DAYS } from "@/lib/constants";
 
 const TYPE_LABEL: Record<string, string> = {
   sell: "出售",
@@ -183,6 +185,19 @@ export default async function ListingDetailPage({
               <dt className="text-zinc-500">發布</dt>
               <dd>{formatDate(listing.published_at ?? listing.created_at)}</dd>
             </div>
+            {(listing.status === "active" || listing.status === "reserved") &&
+              listing.published_at && (
+                <div>
+                  <dt className="text-zinc-500">自動關閉</dt>
+                  <dd>
+                    {listingExpiryLabel(listing.published_at) ?? "—"}
+                    <span className="text-zinc-500">
+                      {" "}
+                      （發布後 {LISTING_PUBLISH_TTL_DAYS} 天）
+                    </span>
+                  </dd>
+                </div>
+              )}
             {listing.note && (
               <div>
                 <dt className="text-zinc-500">備註</dt>

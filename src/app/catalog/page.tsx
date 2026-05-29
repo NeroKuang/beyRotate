@@ -26,6 +26,7 @@ export default async function CatalogPage({
               go-shoot
             </a>
             {process.env.REDIS_URL ? " · 搜尋結果已快取" : ""}
+            。表格「市集均價」依目前<strong>上架中／已預留</strong>刊登計算出售與徵求均價。
           </>
         }
       />
